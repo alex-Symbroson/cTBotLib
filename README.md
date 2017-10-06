@@ -48,7 +48,7 @@ initialisize the bot with your Bot-Token (get it from BotFather)
 now you can call the api functions. They will return the response of Telegram.
 Note that all arguments should be char* or const char
 
-	```c
+	```gcc
 	char* result = TBot_sendMessage(chat_id, "Hello World!");
 	```
 
