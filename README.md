@@ -24,11 +24,13 @@ Compiling
 ---------
 
 I suggest using the included Makefile. Tree should be:
+
 	```
 	Makefile
 	main.c
 	inc/
 	src/
+	```
 
 execute '$ make' in the Terminal.
 You can specify the output file name with pasing 'out=name' as argument to 'make'
@@ -38,24 +40,28 @@ Usage
 
 **Bot api:**
 initialisize the bot with your Bot-Token (get it from BotFather)
+
 	```c
 	TBot_init("<TOKEN>");
 	```
 
 now you can call the api functions. They will return the response of Telegram.
-Note that all arguments should be char* or const char*
+Note that all arguments should be char* or const char
+
 	```c
 	char* result = TBot_sendMessage(chat_id, "Hello World!");
 	```
 
 at the of your program destroy it. This will free dynamically
 allocated variables and the socket
+
 	```c
 	TBot_destroy();
 	```
 
 **JSON parser:**
 initialisize a new parser with the json-string:
+
 	```c
 	JSON json_obj;
 	json_init(json_obj, json_string);
@@ -65,6 +71,7 @@ get specific values using json_get. it will return "\0" if the member doesn't ex
 I've tried to make this nearly equal to like other languages access objects:
 	- access lists with "[i]" (i is the index)
 	- access object properties with ".propname"
+	
 	```c
 	JSON obj;
 	json_init(obj, "{list:[1,{value:\"nothing\"}]}");
@@ -72,6 +79,7 @@ I've tried to make this nearly equal to like other languages access objects:
 	```
 
 finally free the JSON instance:
+
 	```c
 	json_free(obj);
 	```
