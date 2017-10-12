@@ -5,10 +5,8 @@
 
 #include <stdio.h>
 
-//#define TOKEN "000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-//#define ME "000000000"
-#define TOKEN "369333278:AAHWPWC8IXn5AmxzAE_XIINmFeQBQyXRP88"
-#define ME "280031408"
+#define TOKEN "000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+#define ME "000000000"
 
 int main(int argc,char *argv[]) {
 	BEGIN("int argc=%i,char *argv[]",argc);
