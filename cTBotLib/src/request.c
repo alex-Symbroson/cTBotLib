@@ -5,31 +5,30 @@
 #include <stdio.h>
 
 void _Socket_init(Socket *s, char* host, uint16_t port) {
-	BEGIN("Socket*s,char*host=\"%s\",uint16_t port=%i",host,port);
+	BEGIN("Socket*s,char*host=\"%s\",uint16_t port=%u",host,port);
 
 	s->host = host;
 	s->ctx = SSL_CTX_new(SSLv23_client_method());
-	if(s->ctx == NULL) error("couldn't create ssl context");
+	if(s->ctx == NULL) error_exit("couldn't create ssl context");
 
 	s->bio = BIO_new_ssl_connect(s->ctx);
 	char* buf = malloc((strlen(host)+5));
-	sprintf(buf, "%s:%i", host, port);
+	sprintf(buf, "%s:%u", host, port);
 	BIO_set_conn_hostname(s->bio, buf);
 	free(buf);
 
-	if(BIO_do_connect(s->bio) <= 0) error("couldn't connect to host");
+	if(BIO_do_connect(s->bio) <= 0) error_exit("couldn't connect to host");
 
 	s->active = 1;
 }
 
-char* Socket_send(Socket *s, char* args) {
-	BEGIN("Socket*s,char*args=%s",args);
+char* Socket_send(Socket *s, char* path) {
+	BEGIN("Socket*s,char*path=\"%s\"",path);
 
 	char* base = "POST %s HTTP/1.1\r\nHost: %s\r\n\r\n";
-	char* msg = malloc((strlen(base)+strlen(args)+strlen(s->host)));
-	sprintf(msg, base, args, s->host);
-
-	if(BIO_write(s->bio, msg, strlen(msg)) <= 0) error("couldn't send request");
+	char* msg = malloc((strlen(base) + strlen(path) + strlen(s->host)));
+	sprintf(msg, base, path, s->host);
+	if(BIO_write(s->bio, msg, strlen(msg)) <= 0) error_exit("couldn't send request");
 
 	int size;
 	char buf[1024];

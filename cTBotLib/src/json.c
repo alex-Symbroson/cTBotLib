@@ -1,8 +1,7 @@
 
-#include "JSON.h"
+#include "json.h"
 #include "macros.h"
 
-//#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -11,11 +10,11 @@ char* _json_get(jsmntok_t* token, char* path, char* json) {
 	BEGIN("jsmntok_t*token,char*path=\"%s\",char*json",path);
 	switch(*path) {
 		case '[': { //array
-			int n = 0, i = 1, len, size = token->size;
+			uint32_t n = 0, i = 1, len, size = token->size;
 				//string to int of "[i]"
 			while(*++path && *path != ']') n = (n<<3) + (n<<1) + *path - '0';
 			if(n >= size) { //index overflow
-				error("json error: index %i does not exist", n);
+				error_exit("json error: index %i does not exist", n);
 				return "";
 			}
 
@@ -38,7 +37,7 @@ char* _json_get(jsmntok_t* token, char* path, char* json) {
 			return memcpy(ret, json + token->start, token->end - token->start);
 		}
 		default: { //object
-			int n = 0, i = 1, k = 0, end, size = token->size;
+			uint32_t n = 0, i = 1, k = 0, end, size = token->size;
 				//get length of ".property" name
 			if(*path == '.') path++;
 			while(path[n] && path[n] != '.' && path[n] != '[') n++;
@@ -55,7 +54,7 @@ char* _json_get(jsmntok_t* token, char* path, char* json) {
 					token[i].pos, token[i].size, token[i+1].pos, token[i+1].size);
 			}
 			if(k >= size) { //property doesn't exist
-				error("json error: couldn't find property \"%.*s\"", n, path);
+				error_exit("json error: couldn't find property \"%.*s\"", n, path);
 				return "";
 			}
 
@@ -66,3 +65,12 @@ char* _json_get(jsmntok_t* token, char* path, char* json) {
 		}
 	}
 }
+
+uint32_t json_getLength(JSON v, char* path) {
+	BEGIN("JSON v,char*path=\"%s\"",path);
+	JSON w;
+	json_init(w, json_get(v, path));
+	uint32_t ret = w.tokens[0].size;
+	json_free(w);
+	return ret;
+};

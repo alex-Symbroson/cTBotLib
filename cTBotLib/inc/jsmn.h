@@ -1,5 +1,5 @@
-#ifndef __JSMN_H_
-#define __JSMN_H_
+#ifndef _JSMN_H_
+#define _JSMN_H_
 
 //#define JSMN_STRICT
 

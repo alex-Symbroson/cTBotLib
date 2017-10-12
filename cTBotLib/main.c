@@ -1,43 +1,39 @@
 
 #include "macros.h"
 #include "TBot.h"
-#include "JSON.h"
+#include "json.h"
 
 #include <stdio.h>
 
-#define TOKEN "000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-#define ME "000000000"
+//#define TOKEN "000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+//#define ME "000000000"
+#define TOKEN "369333278:AAHWPWC8IXn5AmxzAE_XIINmFeQBQyXRP88"
+#define ME "280031408"
 
 int main(int argc,char *argv[]) {
 	BEGIN("int argc=%i,char *argv[]",argc);
 	INFO(STATUS_S, STATUS_A);
 
 	TBot_init(TOKEN);
-	char* res = TBot_sendMessage(ME, "this is awesome!");
-	printf("%s\n\n", res);
+	char* result;
+	JSON res;
 
-	JSON v;
-	json_init(v,res);
+	printf("getting updates...\n");
+	result = TBot_getUpdates();
+	printf("%s\n\n", result);
+	if(!TBot_checkOk(result, "1")) return 0;
 
-	if(strncmp(json_get(v, "ok"), "true", 4))
-		error("telegram error %s: %s",
-			json_get(v, "error_code"), json_get(v, "description"));
-	else {
-		if(*json_get(v, "result.chat.username"))
-			printf("%s -> %s: \"%s\"\n",
-				json_get(v, "result.from.username"),
-				json_get(v, "result.chat.username"),
-				json_get(v, "result.text")
-			);
-		else
-			printf("%s -> %s: \"%s\"\n",
-				json_get(v, "result.from.username"),
-				json_get(v, "result.chat.id"),
-				json_get(v, "result.text")
-			);
-	}
+	result = TBot_sendMessage(ME, "this is awesome!");
+	printf("%s\n\n", result);
+	if(!TBot_checkOk(result, "1")) return 0;
+
+	json_init(res, result);
+
+	result = TBot_editMessageText(ME, json_get(res, "result.message_id"), "hellooo");
+	if(!TBot_checkOk(result, "1")) return 0;
+	printf("%s\n\n", result);
 
 	TBot_destroy();
-	json_free(v);
+	json_free(res);
 	return 0;
 }

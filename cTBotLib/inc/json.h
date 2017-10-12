@@ -1,5 +1,10 @@
 
+#ifndef _JSON_H_
+#define _JSON_H_
+
 #include "jsmn.h"
+
+#include <stdint.h>
 
 typedef struct {
 	jsmn_parser parser;
@@ -11,6 +16,7 @@ typedef struct {
 	//returns dynamically allocated string
 #define json_get(v,p) _json_get(v.tokens ,p, v.json)
 char* _json_get(jsmntok_t* token, char* path, char* json);
+uint32_t json_getLength(JSON v, char* path);
 
 #define json_init(v,s)\
 	jsmn_init(&v.parser);\
@@ -34,3 +40,5 @@ char* _json_get(jsmntok_t* token, char* path, char* json);
 	"                                                                                                                                                                                                                                                                                                           "\
 	"                                                                                                                                                                                                                                                                                                           "\
 	"                                                                                                                                                                                                                                                                                                           "
+
+#endif
