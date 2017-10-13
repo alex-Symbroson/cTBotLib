@@ -1,5 +1,5 @@
 
-#C - Library for making Telegram-Bot's
+# C - Library for making Telegram-Bot's
 
 Features
 --------

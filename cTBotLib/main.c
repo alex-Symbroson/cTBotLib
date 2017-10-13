@@ -38,11 +38,9 @@ void onUpdate(JSON result) {
 
 int main(int argc,char *argv[]) {
 	BEGIN("int argc=%i,char *argv[]",argc);
-	INFO(STATUS_S, STATUS_A);
 
 	INFO("initialisize bot");
 	TBot_init(TOKEN);
-	JSON res;
 
 	running = 1;
 	TBot_setOnUpdate(onUpdate, 1000);
@@ -51,7 +49,6 @@ int main(int argc,char *argv[]) {
 	while(running) usleep(50);
 
 	TBot_destroy();
-	json_free(res);
 	END();
 	return 0;
 }
