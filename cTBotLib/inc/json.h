@@ -14,9 +14,11 @@ typedef struct {
 } JSON;
 
 	//returns dynamically allocated string
-#define json_get(v,p) _json_get(v.tokens ,p, v.json)
-char* _json_get(jsmntok_t* token, char* path, char* json);
-uint32_t json_getLength(JSON v, char* path);
+char* json_get(JSON v, char* path);
+jsmntok_t* json_goto(jsmntok_t*, char*, char*);
+void json_forEach(void(*)(JSON), JSON, char*);
+
+#define json_getLength(v,p) json_goto(v.tokens,p,v.json)->size
 
 #define json_init(v,s)\
 	jsmn_init(&v.parser);\
@@ -27,7 +29,7 @@ uint32_t json_getLength(JSON v, char* path);
 	v.tokens = realloc(v.tokens, sizeof(jsmntok_t)*v.len)
 
 #define json_free(v)\
-	if(v.len) free(v.tokens)
+	if(v.len) free(v.tokens), v.len = 0
 
 #define PRINT_JSON_INFO(v) do {\
 		INFO("%s", v.json); int i;\

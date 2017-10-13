@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-#define _DEBUG_ 0    //enables 1:INFO 2:BEGIN and 3:DEBUG macro
+#define _DEBUG_ 1    //enables 1:INFO 2:BEGIN,END and 3:DEBUG macro
 #define _ERR_EXIT_ 1 //exit on error
 
 #define error(a,...) printf("\033[1;31m" a "\033[0;37m\n", ##__VA_ARGS__)
@@ -25,20 +25,22 @@
 	#define INFO(...)
 #endif
 
-#if _DEBUG_ > 0
+#if _DEBUG_ > 1
 	#define BEGIN(s, ...) printf("  \033[1;33m*\033[2;32m%s line %i %s(" s ")\033[0;37m\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
+	#define END(s, ...) printf("  \033[1;31m*\033[2;32m%s line %i %s(" s ")\033[0;37m\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
 	#define BEGIN(...)
+	#define END(s, ...)
 #endif
 
-#if _DEBUG_ > 0
+#if _DEBUG_ > 2
 	#define DEBUG(s, ...) printf("\033[2;33m      " s "\033[0;37m\n", ##__VA_ARGS__)
 #else
 	#define DEBUG(...)
 #endif
 
-#define STATUS_S _DATE_S_ _TIME_S_ _STDC_S_ _STDC_VERSION_S_ _STDC_HOSTED_S_ "\n\n"
-#define STATUS_A __DATE__,__TIME__,__STDC__,__STDC_VERSION__,__STDC_HOSTED__
+#define STATUS_S _DATE_S_ _TIME_S_ "\n\n"
+#define STATUS_A __DATE__,__TIME__
 #define STATUS STATUS_S,STATUS_A
 
 #define _DATE_S_ "date:\"%s\" "

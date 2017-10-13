@@ -10,10 +10,10 @@ DIR_INC   = inc/
 COMP = gcc
 
 	# compiler flags
-CFLAGS  = -I inc -Wall
+CFLAGS  = -I inc -Wall -g
 
 	# linker flags
-LDFLAGS  = -lssl -lcrypto
+LDFLAGS  = -lssl -lcrypto -pthread
 
 	# clean extensions
 FILES_CLEAN = *.o

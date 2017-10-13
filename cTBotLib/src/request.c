@@ -20,6 +20,7 @@ void _Socket_init(Socket *s, char* host, uint16_t port) {
 	if(BIO_do_connect(s->bio) <= 0) error_exit("couldn't connect to host");
 
 	s->active = 1;
+	END();
 }
 
 char* Socket_send(Socket *s, char* path) {
@@ -37,10 +38,11 @@ char* Socket_send(Socket *s, char* path) {
 	do {
 		size = BIO_read(s->bio, buf, 1024);
 		buf[size] = 0;
-		msg = realloc(msg, size);
-		sprintf(msg, "%s", buf);
+		msg = realloc(msg, strlen(msg) + size);
+		sprintf(msg, "%s%s", msg, buf);
 	} while(BIO_pending(s->bio) && size);
 
+	END();
 	return msg;
 }
 
@@ -52,14 +54,27 @@ void Socket_close(Socket* s) {
 		SSL_CTX_free(s->ctx);
 		s->active = 0;
 	}
+	END();
 }
 
 char* extractBody(char* text) {
-	BEGIN("char*text");
-	while(*text)
-		if(!strncmp(text++, "\r\n\r\n", 4))
-			return text+3;
-	return "\0";
+	BEGIN("char*text=\"%s\"", text);
+	char* ret;
+	uint32_t i = 0, len;
+	while(text[i])
+		if(!strncmp(text + i, "\r\n\r\n", 4)) {
+			len = strlen(text + i + 4);
+			ret = malloc(len + 1);
+			memcpy(ret, text + i + 4, len + 1);
+			ret[len] = 0;
+			free(text);
+			return ret;
+		} else i++;
+	free(text);
+	ret = malloc(1);
+	*ret = 0;
+	END();
+	return ret;
 }
 
 /*
