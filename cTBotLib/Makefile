@@ -10,10 +10,10 @@ DIR_INC   = inc/
 COMP = gcc
 
 	# compiler flags
-CFLAGS  = -I inc -Wall -g
+CFLAGS  = -I inc -Wall
 
 	# linker flags
-LDFLAGS  = -lssl -lcrypto -pthread
+LDFLAGS  = -pthread -lcurl
 
 	# clean extensions
 FILES_CLEAN = *.o
@@ -50,11 +50,12 @@ all_init:
 
 $(OUTPUT).out: $(OBJ) $(MAIN).c
 #	@printf "\n#### linking project\n"
-	$(COMP) $(CFLAGS)    -o $@ $(MAIN).c $(OBJ) $(LDFLAGS)
+	ld  -r -o lcTBotLib $(OBJ)
+	$(COMP)    $(CFLAGS) -o $@ $(MAIN).c lcTBotLib $(LDFLAGS)
 
 $(DIR_BUILD)%.o: $(DIR_SRC)%.c $(HDR)
 #	@printf "\n#### compiling \"$@\" based on \"$^\"\n"
-	$(COMP) $(CFLAGS) -c -o $@ $<
+	$(COMP) -c $(CFLAGS) -o $@ $<
 
 run: all
 #	@printf "\n#### executing $(OUTPUT).out\n"

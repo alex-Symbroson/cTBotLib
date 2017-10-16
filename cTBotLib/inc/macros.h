@@ -3,6 +3,7 @@
 #define _BS_EXT_HPP_
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define _DEBUG_ 1    //enables 1:INFO 2:BEGIN,END and 3:DEBUG macro
 #define _ERR_EXIT_ 1 //exit on error
@@ -30,7 +31,7 @@
 	#define END(s, ...) printf("  \033[1;31m*\033[2;32m%s line %i %s(" s ")\033[0;37m\n", __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
 	#define BEGIN(...)
-	#define END(s, ...)
+	#define END(...)
 #endif
 
 #if _DEBUG_ > 2
@@ -40,8 +41,8 @@
 #endif
 
 #define STATUS_S _DATE_S_ _TIME_S_ "\n\n"
-#define STATUS_A __DATE__,__TIME__
-#define STATUS STATUS_S,STATUS_A
+#define STATUS_A __DATE__, __TIME__
+#define STATUS STATUS_S, STATUS_A
 
 #define _DATE_S_ "date:\"%s\" "
 #ifndef __DATE__

@@ -3,28 +3,13 @@
 #define _REQUEST_H_
 
 #include <stdint.h>
-#include <stdio.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/bio.h>
-
-char hash8(char *str);
+#include <curl/curl.h>
 
 typedef struct {
-	char active;
-	char* host;
-	BIO* bio;
-	SSL_CTX* ctx;
-} Socket;
+	char* data;
+	uint16_t len;
+} Response;
 
-	//default value for port = 443
-#define __Socket_init(a,b,c,...) _Socket_init(a,b,c)
-#define Socket_init(...) __Socket_init(__VA_ARGS__,443)
-void _Socket_init(Socket* sock, char* host, uint16_t port);
-
-char* Socket_send(Socket* sock, char* args);
-void Socket_close(Socket* sock);
-
-char* extractBody(char* text);
+char* sendRequest(CURL *curl, struct curl_httppost *post);
 
 #endif //_REQUEST_H_

@@ -3,7 +3,6 @@
 #include "macros.h"
 
 #include <string.h>
-#include <stdlib.h>
 
 	//returns dynamically allocated string
 jsmntok_t* json_goto(jsmntok_t* token, char* path, char* json) {
@@ -22,7 +21,6 @@ jsmntok_t* json_goto(jsmntok_t* token, char* path, char* json) {
 			DEBUG("searching index [%i]", n);
 				//jump to list[n]
 			while(n--) {
-				//i += 1 + token[i].size;
 				len = token[i].end;
 				while(token[i].start < len) i++;
 			}
@@ -44,7 +42,6 @@ jsmntok_t* json_goto(jsmntok_t* token, char* path, char* json) {
 					i, token[i].pos, token[i].size, token[i+1].pos, token[i+1].size);
 				//search property
 			while(strncmp(path, json+token[i].start, token[i].end - token[i].start) && ++k < size) {
-				//i += 2 + token[i+1].size;
 				end = token[i+1].end;
 				while(token[i].start < end) i++;
 				DEBUG("am at token %i, size: %i, value token: %i, value size: %i",
@@ -90,7 +87,7 @@ void json_forEach(void(*callback)(JSON), JSON v, char* path) {
 			JSON arg;
 			json_init(arg, json);
 			callback(arg);
-			free(arg.tokens); //json_free(arg);
+			free(arg.tokens);
 			free(json);
 
 			uint32_t end = token[p++].end;

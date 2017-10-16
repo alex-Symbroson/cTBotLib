@@ -4,6 +4,7 @@
 #include "json.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #define TOKEN "000000000:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 #define ME "000000000"
@@ -36,8 +37,8 @@ void onUpdate(JSON result) {
 	END();
 }
 
-int main(int argc,char *argv[]) {
-	BEGIN("int argc=%i,char *argv[]",argc);
+int main(int argc, char *argv[]) {
+	BEGIN("int argc=%i,char *argv[]", argc);
 
 	INFO("initialisize bot");
 	TBot_init(TOKEN);

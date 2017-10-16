@@ -1,24 +1,21 @@
 
 #include "TBot.h"
-#include "macros.h"
 #include "json.h"
+#include "macros.h"
 #include "request.h"
 
 #include <time.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <string.h>
 #include <pthread.h>
+#include <curl/curl.h>
 
 struct {
-		//socket related stuff
-	uint16_t default_port;
 	char* token;
 	char* offset;
-	Socket socket;
+	CURL* curl;
 	pthread_t thread;
-	uint8_t thread_active;
 	uint32_t update_interval;
-} TBot = { .default_port = 443, .offset="", .socket.active = 0, .thread_active = 0, .update_interval = 500 };
+} TBot = { .offset="", .thread = 0, .update_interval = 500 };
 
 void writeFile(char* file, char* text) {
 	BEGIN("char*file=\"%s\",char*text=\"%s\"",file,text);
@@ -39,7 +36,7 @@ char* readFile(char* file) {
 	char *buf = malloc(0);
 
 	while((c = fgetc(f)) != EOF) {
-		if(i <= len) buf = realloc(buf, len += 10);
+		if(i <= len) buf = realloc(buf, ++len);
 		buf[i++] = c;
 	}
 
@@ -53,11 +50,11 @@ char* readFile(char* file) {
 void TBot_init(char* token) {
 	BEGIN("char*token=\"%s\"",token);
 
-	SSL_library_init();
+	if(curl_global_init(CURL_GLOBAL_DEFAULT) || !(TBot.curl = curl_easy_init()))
+		error_exit("couldn't init curl");
+
 	TBot.token = token;
-	if(strlen(TBot.offset)) free(TBot.offset);
 	TBot.offset = readFile("offset");
-	Socket_init(&TBot.socket, "api.telegram.org", TBot.default_port);
 	END();
 }
 
@@ -79,15 +76,14 @@ char* _TBot_getUpdates(char* offset) {
 
 	uint32_t ioffset = 0;
 	uint8_t i = 0;
-	while(offset[i])
-		ioffset = ioffset*10 + offset[i++] - '0';
+	while(offset[i]) ioffset = ioffset*10 + offset[i++] - '0';
 
-	char* base = "/bot%s/getUpdates?offset=%u";
-	base = malloc(strlen(base) + strlen(TBot.token) + strlen(offset));
-	sprintf(base, "/bot%s/getUpdates?offset=%u", TBot.token, ioffset + 1);
-	char* result = extractBody(Socket_send(&TBot.socket, base));
-	free(base);
+	char* url = malloc(48 + strlen(TBot.token) + strlen(offset));
+	sprintf(url, "https://api.telegram.org/bot%s/getUpdates?offset=%u", TBot.token, ioffset + 1);
+	curl_easy_setopt(TBot.curl, CURLOPT_URL, url);
+	free(url);
 
+	char* result = sendRequest(TBot.curl, NULL);
 	JSON v;
 	json_init(v, result);
 
@@ -125,42 +121,132 @@ void* _TBot_onUpdate(void* foo) {
 
 void _TBot_setOnUpdate(void (*callback)(JSON), uint32_t interval) {
 	BEGIN("void(*callb)(JSON),uint32_t itv=%u", interval);
-	TBot.thread_active = 1;
 	TBot.update_interval = interval;
 	pthread_create(&TBot.thread, NULL, &_TBot_onUpdate, (void*)callback);
+	END();
 }
 
-char* TBot_send(
-	char* func, char* chat_id,  char* message_id,
-	char* text, char* reply_id, char* markup) {
+char* TBot_send(char* func, char* chat_id, char* message_id,
+	char* text, char* file, char* disable_notification, char* reply_markup, char* special) {
 	BEGIN("...");
 
-	char* base = "/bot%s/%s?";
-	base = malloc((strlen(base) + strlen(TBot.token) + strlen(func)));
-	sprintf(base, "/bot%s/%s?", TBot.token, func);
+		//concat main url
+	char* buf = malloc(30 + strlen(TBot.token) + strlen(func));
+	sprintf(buf, "https://api.telegram.org/bot%s/%s", TBot.token, func);
+	curl_easy_setopt(TBot.curl, CURLOPT_URL, buf);
+	free(buf);
 
-#define addArg(v)\
-	if(strlen(v)) {\
-		base = realloc(base, (strlen(base) + strlen(""#v) + strlen(v))*sizeof(char)+3);\
-		sprintf(base, "%s%s=%s&", base, ""#v, v);\
+		//init formdata for request
+	struct curl_httppost *post = NULL;
+    struct curl_httppost *last = NULL;
+
+	#define addArg(n) if(*n) curl_formadd(&post, &last, CURLFORM_COPYNAME, ""#n, CURLFORM_COPYCONTENTS, n, CURLFORM_END)
+
+	if(strcmp(special, "custom")) {
+		addArg(chat_id);
+		addArg(reply_markup);
+		addArg(disable_notification);
+
+		if(strncmp(func, "send", 4)) {
+			addArg(message_id);
+		} else curl_formadd(&post, &last, CURLFORM_COPYNAME, "reply_to_message_id", CURLFORM_COPYCONTENTS, message_id, CURLFORM_END);
+
+		if(*file) {
+				//use caption key instead of text
+			if(*text) curl_formadd(&post, &last, CURLFORM_COPYNAME, "caption", CURLFORM_COPYCONTENTS, text, CURLFORM_END);
+
+				//extract ie. 'sticker' from 'sendSticker'
+			buf = malloc(strlen(func+4));
+			sprintf(buf, "%c%s", func[4] + 32, func + 5);
+			curl_formadd(&post, &last, CURLFORM_COPYNAME, buf, CURLFORM_FILE, file, CURLFORM_END);
+			free(buf);
+		} else addArg(text);
+
+			//add special arguments
+		addSpecials:
+		if(*special) {
+			JSON v;
+			json_init(v, special);
+			uint32_t i = 1, end = v.tokens[2].end, size = v.tokens->size, len;
+			char* key = malloc(1);
+			buf = malloc(1);
+
+			while(size--) {
+					//get key
+				len = v.tokens[i].end - v.tokens[i].start + 1;
+				key = realloc(key, len);
+				snprintf(key, len, "%s", special + v.tokens[i].start);
+
+					//get value
+				len = v.tokens[i+1].end - v.tokens[i+1].start + 1;
+				buf = realloc(buf, len);
+				snprintf(buf, len, "%s", special + v.tokens[i+1].start);
+
+					//add to form if value not empty
+				if(len) curl_formadd(&post, &last, CURLFORM_COPYNAME, key, CURLFORM_COPYCONTENTS, buf, CURLFORM_END);
+
+					//jump to next key
+				end = v.tokens[i+1].end;
+				while(v.tokens[i].start < end) i++;
+			}
+			free(buf);
+			free(key);
+			json_free(v);
+		}
+	} else {
+		#define addCArg(k,n) if(*n) curl_formadd(&post, &last, CURLFORM_COPYNAME, k, CURLFORM_COPYCONTENTS, n, CURLFORM_END)
+
+		if(!strcmp(func, "getStickerSet")) {
+			addCArg("name", chat_id);
+		} else
+		if(!strcmp(func, "uploadStickerFile")) {
+			addCArg("user_id", chat_id);
+			addCArg("png_sticker", message_id);
+		} else
+		if(!strcmp(func, "createNewStickerSet")) {
+			addCArg("user_id", chat_id);
+			addCArg("name", message_id);
+			addCArg("title", text);
+			addCArg("png_sticker", file);
+			addCArg("emojis", disable_notification);
+			if(*reply_markup) {
+				special = reply_markup;
+				goto addSpecials;
+			}
+		} else
+		if(!strcmp(func, "addStickerToSet")) {
+			addCArg("user_id", chat_id);
+			addCArg("name", message_id);
+			addCArg("png_sticker", text);
+			addCArg("emojis", file);
+			addCArg("mask_position", disable_notification);
+		} else
+		if(!strcmp(func, "setStickerPositionInSet")) {
+			addCArg("sticker", message_id);
+			addCArg("position", text);
+		} else
+		if(!strcmp(func, "deleteStickerFromSet")) {
+			addCArg("sticker", message_id);
+		} else
+		if(!strcmp(func, "answerInlineQuery")) {
+			addCArg("inline_query_id", message_id);
+			addCArg("results", text);
+			if(*reply_markup) {
+				special = reply_markup;
+				goto addSpecials;
+			}
+		}
 	}
 
-	addArg(chat_id);
-	addArg(message_id);
-	addArg(text);
-	addArg(reply_id);
-	addArg(markup);
-
-	char* result = Socket_send(&TBot.socket, base);
-	free(base);
 	END();
-	return extractBody(result);
+		//send and return request
+	return sendRequest(TBot.curl, post);
 }
 
 void TBot_destroy() {
 	BEGIN();
-	if(strlen(TBot.offset)) free(TBot.offset);
-	if(TBot.thread_active) pthread_cancel(TBot.thread);
-	Socket_close(&TBot.socket);
+	if(*TBot.offset) free(TBot.offset);
+	if(TBot.thread) pthread_cancel(TBot.thread);
+	curl_easy_cleanup(TBot.curl);
 	END();
 }
