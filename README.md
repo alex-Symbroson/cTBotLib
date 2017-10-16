@@ -1,5 +1,7 @@
 
-# C - Library for making Telegram-Bot's
+# cTBotLib
+
+A simple C - library for making Telegram-Bot's
 
 Features
 --------
